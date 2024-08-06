@@ -1,4 +1,5 @@
 import fastifyCors from '@fastify/cors'
+import fastifyJwt from '@fastify/jwt'
 import fastifySwagger from '@fastify/swagger'
 import fastifySwaggerUi from '@fastify/swagger-ui'
 import { fastify } from 'fastify'
@@ -9,12 +10,18 @@ import {
   ZodTypeProvider,
 } from 'fastify-type-provider-zod'
 
+import { errorHandler } from './error-handler'
+import { authenticateWithPassport } from './routes/auth/authenticate-with-password'
 import { createAccount } from './routes/auth/create-account'
+import { getProfile } from './routes/auth/get-profile'
+import { requestPasswordRecovery } from './routes/auth/request-password-recovery'
 
 const app = fastify().withTypeProvider<ZodTypeProvider>()
 
 app.setSerializerCompiler(serializerCompiler)
 app.setValidatorCompiler(validatorCompiler)
+
+app.setErrorHandler(errorHandler)
 
 app.register(fastifySwagger, {
   openapi: {
@@ -32,9 +39,16 @@ app.register(fastifySwaggerUi, {
   routePrefix: '/docs',
 })
 
+app.register(fastifyJwt, {
+  secret: 'my-jwt-secret',
+})
+
 app.register(fastifyCors)
 
 app.register(createAccount)
+app.register(authenticateWithPassport)
+app.register(getProfile)
+app.register(requestPasswordRecovery)
 
 app.listen({ port: 3333 }).then(() => {
   console.log('HTTP server running!')
